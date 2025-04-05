@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from io import StringIO
-from TruthTable import *
+from truthtable import *
 
 
 class TestTruthTable(unittest.TestCase):
