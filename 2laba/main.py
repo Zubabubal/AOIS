@@ -1,4 +1,4 @@
-from TruthTable import TruthTable
+from truthtable import TruthTable
 
 def main():
     print("=== ПОСТРОЕНИЕ ТАБЛИЦЫ ИСТИННОСТИ ===")
