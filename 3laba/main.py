@@ -1,0 +1,17 @@
+from Karno import TruthTable
+if __name__ == "__main__":
+    expr = input("Веведите логическое выражение:")
+    tt = TruthTable(expr)
+    tt.build_sdnf_sknf()
+    result_calc_sdnf = tt.minimize_dnf_calculation()
+    print("\nРезультат минимизации СДНФ:", result_calc_sdnf)
+    result_calc_scnf = tt.minimize_cnf_calculation()
+    print("\nРезультат минимизации СКНФ:", result_calc_scnf)
+    result_table_sdnf = tt.minimize_dnf_table()
+    print("\nРезультат минимизации СДНФ:", result_table_sdnf)
+    result_table_scnf = tt.minimize_cnf_table()
+    print("\nРезультат минимизации СКНФ:", result_table_scnf)
+    result_carno_sdnf = tt.minimize_dnf_karnaugh()
+    print("\nРезультат минимизации СДНФ:", result_calc_sdnf)
+    result_carno_scnf = tt.minimize_cnf_karnaugh()
+    print("\nРезультат минимизации СКНФ:", result_calc_scnf)
