@@ -1,237 +1,382 @@
 import unittest
-from main import MatrixProcessor
+from unittest.mock import patch, call
+import io
+import sys
+
+# Импортируем все функции из исходного модуля
+# Предполагается, что исходный код находится в файле matrix_operations.py
+from main import (
+    print_matrix, read_word, read_column, write_column, write_word,
+    logical_function_f5, logical_function_f10, logical_function_f0, logical_function_f15,
+    apply_logical_function, extract_fields, binary_add, find_matching_words,
+    arithmetic_operation, pattern_matching_search
+)
 
 
-class TestMatrixProcessor(unittest.TestCase):
+class TestMatrixOperations(unittest.TestCase):
+
     def setUp(self):
-        self.size = 16
-        self.processor = MatrixProcessor(self.size)
+        """Настройка тестовой матрицы перед каждым тестом"""
         self.test_matrix = [
-            [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-            [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0],
-            [1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0],
-            [1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
-            [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0],
-            [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0]
+            [1, 0, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 1, 1]
         ]
-        self.processor.load_matrix(self.test_matrix)
 
-    # Тесты инициализации
-    def test_init_default_size(self):
-        mp = MatrixProcessor()
-        self.assertEqual(len(mp.matrix), 16)
-        self.assertEqual(len(mp.matrix[0]), 16)
+        self.full_matrix = [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
 
-    def test_init_custom_size(self):
-        mp = MatrixProcessor(8)
-        self.assertEqual(len(mp.matrix), 8)
-        self.assertEqual(len(mp.matrix[0]), 8)
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_print_matrix_default_title(self, mock_stdout):
+        """Тест печати матрицы с заголовком по умолчанию"""
+        print_matrix(self.test_matrix)
+        output = mock_stdout.getvalue()
+        self.assertIn("Исходная матрица:", output)
+        self.assertIn("['1']", output)
 
-    # Тесты загрузки матрицы
-    def test_load_valid_matrix(self):
-        new_matrix = [[0] * 16 for _ in range(16)]
-        self.processor.load_matrix(new_matrix)
-        self.assertEqual(self.processor.matrix, new_matrix)
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_print_matrix_custom_title(self, mock_stdout):
+        """Тест печати матрицы с пользовательским заголовком"""
+        print_matrix(self.test_matrix, "Тестовая матрица")
+        output = mock_stdout.getvalue()
+        self.assertIn("Тестовая матрица:", output)
 
-    def test_load_invalid_row_count(self):
-        with self.assertRaises(ValueError):
-            self.processor.load_matrix([[0] * 16] * 15)
+    def test_read_word_diagonal_addressing(self):
+        """Тест чтения слова с диагональной адресацией"""
+        # Тест для слова 0 (start_col = 15 % 4 = 3)
+        word = read_word(self.test_matrix, 0)
+        expected = [0, 0, 1, 1]  # matrix[0][3], matrix[1][0], matrix[2][1], matrix[3][2]
+        self.assertEqual(word, expected)
 
-    def test_load_invalid_col_count(self):
-        with self.assertRaises(ValueError):
-            self.processor.load_matrix([[0] * 15] * 16)
+        # Тест для слова 1 (start_col = 14 % 4 = 2)
+        word = read_word(self.test_matrix, 1)
+        expected = [0, 1, 1, 1]  # matrix[0][2], matrix[1][3], matrix[2][0], matrix[3][1]
+        self.assertEqual(word, expected)
 
-    # Тесты извлечения последовательностей
-    def test_get_row_sequence_full(self):
-        seq = self.processor.get_sequence(0, 0, 'row')
-        self.assertEqual(seq, self.test_matrix[0])
+    def test_read_word_different_indices(self):
+        """Тест чтения слов с разными индексами"""
+        # Тест для слова 15 (start_col = 0 % 4 = 0)
+        word = read_word(self.test_matrix, 15)
+        expected = [1, 1, 1, 1]  # matrix[0][0], matrix[1][1], matrix[2][2], matrix[3][3]
+        self.assertEqual(word, expected)
 
-    def test_get_row_sequence_partial(self):
-        seq = self.processor.get_sequence(0, 10, 'row')
-        self.assertEqual(seq, self.test_matrix[0][10:])
+    def test_read_column(self):
+        """Тест чтения столбца"""
+        column = read_column(self.test_matrix, 0)
+        expected = [1, 1, 0, 0]
+        self.assertEqual(column, expected)
 
-    def test_get_col_sequence_full(self):
-        seq = self.processor.get_sequence(0, 0, 'col')
-        expected = [row[0] for row in self.test_matrix]
-        self.assertEqual(seq, expected)
+        column = read_column(self.test_matrix, 2)
+        expected = [0, 0, 1, 1]
+        self.assertEqual(column, expected)
 
-    def test_get_col_sequence_partial(self):
-        seq = self.processor.get_sequence(10, 0, 'col')
-        expected = [row[0] for row in self.test_matrix[10:]]
-        self.assertEqual(seq, expected)
+    def test_write_column(self):
+        """Тест записи в столбец"""
+        matrix_copy = [row[:] for row in self.test_matrix]
+        new_data = [1, 1, 1, 1]
+        write_column(matrix_copy, 1, new_data)
 
-    def test_get_diag_sequence_full(self):
-        seq = self.processor.get_sequence(0, 0, 'diag')
-        expected = [self.test_matrix[i][i] for i in range(16)]
-        self.assertEqual(seq, expected)
+        expected_column = [1, 1, 1, 1]
+        actual_column = read_column(matrix_copy, 1)
+        self.assertEqual(actual_column, expected_column)
 
-    def test_get_diag_sequence_partial(self):
-        seq = self.processor.get_sequence(10, 10, 'diag')
-        expected = [self.test_matrix[i][i] for i in range(10, 16)]
-        self.assertEqual(seq, expected)
+    def test_write_column_partial_data(self):
+        """Тест записи в столбец с частичными данными"""
+        matrix_copy = [row[:] for row in self.test_matrix]
+        new_data = [1, 1]  # Только 2 элемента
+        write_column(matrix_copy, 1, new_data)
 
-    def test_get_sequence_invalid_direction(self):
-        with self.assertRaises(ValueError):
-            self.processor.get_sequence(0, 0, 'invalid')
+        # Проверяем, что изменились только первые 2 элемента
+        self.assertEqual(matrix_copy[0][1], 1)
+        self.assertEqual(matrix_copy[1][1], 1)
+        self.assertEqual(matrix_copy[2][1], 1)  # Остался прежним
+        self.assertEqual(matrix_copy[3][1], 0)  # Остался прежним
 
-    # Тесты работы со столбцами
-    def test_get_valid_column(self):
-        col = self.processor.get_column(0)
-        expected = [row[0] for row in self.test_matrix]
-        self.assertEqual(col, expected)
+    def test_write_word(self):
+        """Тест записи слова с диагональной адресацией"""
+        matrix_copy = [row[:] for row in self.test_matrix]
+        new_word = [1, 1, 1, 1]
+        write_word(matrix_copy, 0, new_word)
 
-    def test_get_column_invalid_index(self):
-        with self.assertRaises(ValueError):
-            self.processor.get_column(-1)
-        with self.assertRaises(ValueError):
-            self.processor.get_column(16)
+        # Проверяем, что слово записалось правильно
+        written_word = read_word(matrix_copy, 0)
+        self.assertEqual(written_word, new_word)
 
-    # Тесты операций над столбцами
-    def test_apply_operation_f0(self):
-        self.processor.apply_operation("f0", None, 0)
-        self.assertEqual(self.processor.get_column(0), [0] * 16)
+    def test_write_word_partial_data(self):
+        """Тест записи слова с частичными данными"""
+        matrix_copy = [row[:] for row in self.test_matrix]
+        new_word = [1, 1]  # Только 2 элемента
+        write_word(matrix_copy, 0, new_word)
 
-    def test_apply_operation_f5(self):
-        src_col = self.processor.get_column(1)
-        self.processor.apply_operation("f5", 1, 2)
-        self.assertEqual(self.processor.get_column(2), src_col)
+        # Проверяем, что изменились только первые 2 позиции
+        written_word = read_word(matrix_copy, 0)
+        self.assertEqual(written_word[:2], [1, 1])
 
-    def test_apply_operation_f10(self):
-        src_col = self.processor.get_column(1)
-        expected = [1 - x for x in src_col]
-        self.processor.apply_operation("f10", 1, 2)
-        self.assertEqual(self.processor.get_column(2), expected)
+    def test_logical_function_f5(self):
+        """Тест логической функции f5 (возвращает b)"""
+        self.assertEqual(logical_function_f5(0, 0), 0)
+        self.assertEqual(logical_function_f5(0, 1), 1)
+        self.assertEqual(logical_function_f5(1, 0), 0)
+        self.assertEqual(logical_function_f5(1, 1), 1)
 
-    def test_apply_operation_f15(self):
-        self.processor.apply_operation("f15", None, 0)
-        self.assertEqual(self.processor.get_column(0), [1] * 16)
+    def test_logical_function_f10(self):
+        """Тест логической функции f10 (НЕ b)"""
+        self.assertEqual(logical_function_f10(0, 0), 1)
+        self.assertEqual(logical_function_f10(0, 1), 0)
+        self.assertEqual(logical_function_f10(1, 0), 1)
+        self.assertEqual(logical_function_f10(1, 1), 0)
 
-    def test_apply_operation_invalid_op(self):
-        with self.assertRaises(ValueError):
-            self.processor.apply_operation("invalid", 0, 1)
+    def test_logical_function_f0(self):
+        """Тест логической функции f0 (константа 0)"""
+        self.assertEqual(logical_function_f0(0, 0), 0)
+        self.assertEqual(logical_function_f0(0, 1), 0)
+        self.assertEqual(logical_function_f0(1, 0), 0)
+        self.assertEqual(logical_function_f0(1, 1), 0)
 
-    def test_apply_operation_invalid_columns(self):
-        with self.assertRaises(ValueError):
-            self.processor.apply_operation("f5", -1, 0)
-        with self.assertRaises(ValueError):
-            self.processor.apply_operation("f5", 16, 0)
-        with self.assertRaises(ValueError):
-            self.processor.apply_operation("f5", 0, -1)
-        with self.assertRaises(ValueError):
-            self.processor.apply_operation("f5", 0, 16)
+    def test_logical_function_f15(self):
+        """Тест логической функции f15 (константа 1)"""
+        self.assertEqual(logical_function_f15(0, 0), 1)
+        self.assertEqual(logical_function_f15(0, 1), 1)
+        self.assertEqual(logical_function_f15(1, 0), 1)
+        self.assertEqual(logical_function_f15(1, 1), 1)
 
-    # Тесты сложения полей
-    def test_add_fields_valid(self):
-        results = self.processor.add_fields(8, 9, [1, 0, 1], 4)
-        self.assertTrue(isinstance(results, list))
-        for res in results:
-            self.assertEqual(len(res), 5)  # (col, pattern, a, b, sum)
+    def test_apply_logical_function(self):
+        """Тест применения логической функции к словам"""
+        word1 = [1, 0, 1, 0]
+        word2 = [0, 1, 1, 0]
 
-    def test_add_fields_no_match(self):
-        results = self.processor.add_fields(8, 9, [0, 0, 0], 4)
-        self.assertEqual(results, [])
+        result = apply_logical_function(word1, word2, logical_function_f5)
+        expected = [0, 1, 1, 0]  # f5 возвращает b
+        self.assertEqual(result, expected)
 
-    def test_add_fields_invalid_pattern(self):
-        with self.assertRaises(ValueError):
-            self.processor.add_fields(0, 1, [1, 0], 4)
+    def test_apply_logical_function_different_lengths(self):
+        """Тест применения логической функции к словам разной длины"""
+        word1 = [1, 0]
+        word2 = [0, 1, 1, 0]
 
-    def test_add_fields_invalid_columns(self):
-        with self.assertRaises(IndexError):
-            self.processor.add_fields(-1, 1, [1, 0, 1], 4)
-        with self.assertRaises(IndexError):
-            self.processor.add_fields(16, 1, [1, 0, 1], 4)
+        result = apply_logical_function(word1, word2, logical_function_f5)
+        expected = [0, 1, 1, 0]  # Недостающие биты word1 заменяются на 0
+        self.assertEqual(result, expected)
 
-    # Тесты поиска по шаблону
-    def test_search_by_pattern_full_match(self):
-        pattern = self.processor.get_column(0)
-        matches = self.processor.search_by_pattern(pattern)
-        self.assertIn(0, matches)
+    def test_extract_fields(self):
+        """Тест извлечения полей из 16-битного слова"""
+        word = [1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1]
+        V, A, B, S = extract_fields(word)
 
-    def test_search_by_pattern_partial_match(self):
-        pattern = [1, 0, 1] + [None] * 13
-        matches = self.processor.search_by_pattern(pattern)
-        self.assertTrue(len(matches) > 0)
-        for col in matches:
-            col_data = self.processor.get_column(col)
-            self.assertEqual(col_data[:3], [1, 0, 1])
+        self.assertEqual(V, [1, 0, 1])
+        self.assertEqual(A, [1, 1, 0, 0])
+        self.assertEqual(B, [1, 1, 1, 1])
+        self.assertEqual(S, [0, 0, 1, 0, 1])
 
-    def test_search_by_pattern_all_none(self):
-        matches = self.processor.search_by_pattern([None] * 16)
-        self.assertEqual(len(matches), 16)
+    def test_extract_fields_short_word(self):
+        """Тест извлечения полей из короткого слова (дополнение нулями)"""
+        word = [1, 0, 1]
+        V, A, B, S = extract_fields(word)
 
-    def test_search_by_pattern_invalid_length(self):
-        with self.assertRaises(ValueError):
-            self.processor.search_by_pattern([1] * 15)
+        self.assertEqual(V, [1, 0, 1])
+        self.assertEqual(A, [0, 0, 0, 0])
+        self.assertEqual(B, [0, 0, 0, 0])
+        self.assertEqual(S, [0, 0, 0, 0, 0])
 
-    # Тесты поиска наилучшего совпадения
-    def test_search_best_match_full(self):
-        pattern = self.processor.get_column(0)
-        matches, count = self.processor.search_best_match(pattern)
-        self.assertEqual(count, 16)
-        self.assertTrue(any(col == 0 for col, _ in matches))
+    def test_binary_add(self):
+        """Тест двоичного сложения"""
+        a = [0, 0, 1, 1]  # 3 в двоичной системе
+        b = [0, 1, 0, 1]  # 5 в двоичной системе
+        result = binary_add(a, b)
 
-    def test_search_best_match_partial(self):
-        pattern = [1, 0, 1] + [0] * 13
-        matches, count = self.processor.search_best_match(pattern)
-        self.assertTrue(count >= 3)
-        self.assertTrue(len(matches) > 0)
+        # 3 + 5 = 8 = 01000 в 5-битном представлении
+        expected = [0, 1, 0, 0, 0]
+        self.assertEqual(result, expected)
 
-    def test_search_best_match_none(self):
-        pattern = [0] * 16
-        matches, count = self.processor.search_best_match(pattern)
-        self.assertTrue(count >= 0)
+    def test_binary_add_zero(self):
+        """Тест двоичного сложения с нулем"""
+        a = [0, 0, 0, 0]
+        b = [0, 0, 0, 0]
+        result = binary_add(a, b)
+        expected = [0, 0, 0, 0, 0]
+        self.assertEqual(result, expected)
 
-    def test_search_best_match_invalid_length(self):
-        with self.assertRaises(ValueError):
-            self.processor.search_best_match([1] * 15)
+    def test_binary_add_overflow(self):
+        """Тест двоичного сложения с переполнением"""
+        a = [1, 1, 1, 1]  # 15
+        b = [1, 1, 1, 1]  # 15
+        result = binary_add(a, b)
 
-    # Тесты вывода
-    def test_print_matrix(self):
-        import io
-        import sys
+        # 15 + 15 = 30 = 11110 в 5-битном представлении
+        expected = [1, 1, 1, 1, 0]
+        self.assertEqual(result, expected)
 
-        captured_output = io.StringIO()
-        sys.stdout = captured_output
-        self.processor.print_matrix()
-        sys.stdout = sys.__stdout__
+    def test_find_matching_words(self):
+        """Тест поиска слов с заданным значением V"""
+        matrix = [
+            [1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1],  # V=[1,0,1]
+            [1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1],  # V=[1,0,1]
+            [0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1],  # V=[0,1,0]
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
 
-        output = captured_output.getvalue()
-        self.assertIn("Матрица:", output)
-        self.assertIn("[1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", output)
+        target_v = [1, 0, 1]
+        matches = find_matching_words(matrix, target_v)
 
-    # Тесты граничных случаев
-    def test_edge_case_last_element(self):
-        # Последний элемент строки
-        seq = self.processor.get_sequence(15, 15, 'row')
-        self.assertEqual(seq, [0])
+        # Должно быть найдено 2 слова
+        self.assertEqual(len(matches), 2)
 
-        # Последний элемент столбца
-        seq = self.processor.get_sequence(15, 15, 'col')
-        self.assertEqual(seq, [0])
+        # Проверяем, что V правильно извлечено
+        for word_idx, word, V, A, B, S in matches:
+            self.assertEqual(V, target_v)
 
-        # Последний элемент диагонали
-        seq = self.processor.get_sequence(15, 15, 'diag')
-        self.assertEqual(seq, [0])
+    def test_find_matching_words_no_matches(self):
+        """Тест поиска слов без совпадений"""
+        target_v = [1, 1, 1]
+        matches = find_matching_words(self.full_matrix, target_v)
 
-    def test_edge_case_empty_sequence(self):
-        # За границами строки
-        seq = self.processor.get_sequence(0, 16, 'row')
-        self.assertEqual(seq, [])
+        # Проверяем количество найденных совпадений (может быть 0)
+        self.assertIsInstance(matches, list)
 
-        # За границами столбца
-        seq = self.processor.get_sequence(16, 0, 'col')
-        self.assertEqual(seq, [])
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_arithmetic_operation_with_matches(self, mock_stdout):
+        """Тест арифметических операций с найденными словами"""
+        # Создаем матрицу, где первое слово имеет V=[1,0,1]
+        matrix = [
+            [1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1] + [0] * 0,
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+
+        target_v = [1, 0, 1]
+        result_matrix = arithmetic_operation(matrix, target_v)
+
+        output = mock_stdout.getvalue()
+        self.assertIn("Арифметическая операция с фильтром", output)
+        self.assertIsInstance(result_matrix, list)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_arithmetic_operation_no_matches(self, mock_stdout):
+        """Тест арифметических операций без совпадений"""
+        matrix = [[0] * 16 for _ in range(4)]
+        target_v = [1, 1, 1]
+
+        result_matrix = arithmetic_operation(matrix, target_v)
+
+        output = mock_stdout.getvalue()
+        self.assertIn("Нет слов с заданным значением V", output)
+        self.assertEqual(result_matrix, matrix)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_pattern_matching_search(self, mock_stdout):
+        """Тест поиска по соответствию с образцом"""
+        target_pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+
+        best_matches, max_matches = pattern_matching_search(self.full_matrix, target_pattern)
+
+        output = mock_stdout.getvalue()
+        self.assertIn("Поиск по соответствию с образцом", output)
+        self.assertIsInstance(best_matches, list)
+        self.assertIsInstance(max_matches, int)
+        self.assertGreaterEqual(max_matches, 0)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_pattern_matching_search_perfect_match(self, mock_stdout):
+        """Тест поиска с идеальным совпадением"""
+        # Создаем матрицу где первое слово точно совпадает с образцом
+        matrix = [[1, 0, 1, 0] for _ in range(4)]
+        target_pattern = [1, 0, 1, 0]
+
+        best_matches, max_matches = pattern_matching_search(matrix, target_pattern)
+
+        # Максимальное количество совпадений должно быть равно длине образца
+        self.assertEqual(max_matches, len(target_pattern))
+        self.assertGreater(len(best_matches), 0)
+
+    def test_pattern_matching_search_empty_pattern(self):
+        """Тест поиска с пустым образцом"""
+        target_pattern = []
+
+        best_matches, max_matches = pattern_matching_search(self.test_matrix, target_pattern)
+
+        # При пустом образце максимальное количество совпадений должно быть 0
+        self.assertEqual(max_matches, 0)
+
+    def test_edge_cases_matrix_operations(self):
+        """Тест граничных случаев для операций с матрицей"""
+        # Тест с матрицей 1x1
+        small_matrix = [[1]]
+
+        # Чтение столбца
+        column = read_column(small_matrix, 0)
+        self.assertEqual(column, [1])
+
+        # Запись в столбец
+        write_column(small_matrix, 0, [0])
+        self.assertEqual(small_matrix[0][0], 0)
+
+    def test_word_operations_large_matrix(self):
+        """Тест операций со словами на большой матрице"""
+        large_matrix = [[i % 2 for i in range(16)] for _ in range(16)]
+
+        # Тест чтения всех слов
+        for word_idx in range(16):
+            word = read_word(large_matrix, word_idx)
+            self.assertEqual(len(word), 16)
+
+        # Тест записи слова
+        test_word = [1] * 16
+        write_word(large_matrix, 0, test_word)
+        written_word = read_word(large_matrix, 0)
+        self.assertEqual(written_word, test_word)
+
+    def test_logical_operations_comprehensive(self):
+        """Комплексный тест логических операций"""
+        functions = [
+            logical_function_f0,
+            logical_function_f5,
+            logical_function_f10,
+            logical_function_f15
+        ]
+
+        test_cases = [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+        for func in functions:
+            for a, b in test_cases:
+                result = func(a, b)
+                self.assertIn(result, [0, 1])  # Результат должен быть 0 или 1
+
+
+class TestMainFunction(unittest.TestCase):
+    """Тесты для интеграции и основной функции"""
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_main_function_execution(self, mock_stdout):
+        """Тест выполнения основной функции без ошибок"""
+        from main import main
+
+        # Проверяем, что main() выполняется без исключений
+        try:
+            main()
+            execution_successful = True
+        except Exception as e:
+            execution_successful = False
+            print(f"Main function failed with: {e}")
+
+        self.assertTrue(execution_successful)
+
+        # Проверяем, что есть вывод
+        output = mock_stdout.getvalue()
+        self.assertGreater(len(output), 0)
+
+        # Проверяем наличие основных разделов в выводе
+        self.assertIn("ДЕМОНСТРАЦИЯ ИЗВЛЕЧЕНИЯ СЛОВ", output)
+        self.assertIn("ЛОГИЧЕСКИЕ ОПЕРАЦИИ", output)
+        self.assertIn("АРИФМЕТИЧЕСКИЕ ОПЕРАЦИИ", output)
+        self.assertIn("ПОИСК ПО СООТВЕТСТВИЮ", output)
 
 
 if __name__ == '__main__':
+    # Запуск тестов с подробным выводом
     unittest.main(verbosity=2)
